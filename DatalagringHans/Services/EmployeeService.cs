@@ -11,8 +11,8 @@ namespace DatalagringHans.Services
 {
 	internal class EmployeeService
 	{
-		private readonly DataContext _context = new DataContext();
-		public async Task<EmployeeForm> GetSpecificEmployee(int _employeeId) 
+		private static readonly DataContext _context = new DataContext();
+		public static async Task<EmployeeForm> GetSpecificEmployee(int _employeeId) 
 		{
 			var employee = await _context.Employees.FirstOrDefaultAsync(x => x.Id == _employeeId);
 			if (employee != null)

@@ -17,6 +17,8 @@ namespace DatalagringHans.Models.Forms
 		public DateTime CaseCreated { get; set; } = DateTime.Now;
 
 		public string CaseStatus { get; set; } = null!;
+		
+		public Guid CaseNumber { get; set; }
 
 		public List<CommentForm>? Comments { get; set; }
 	}

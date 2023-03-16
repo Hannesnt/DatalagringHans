@@ -9,17 +9,18 @@ namespace DatalagringHans.Services
 {
 	internal class CaseService
 	{
-		private readonly DataContext _context = new DataContext(); //Endast för vi har en tom konstruktor
+		private static readonly DataContext _context = new DataContext();
 
 
-		public async Task CreateCase(string description, string email)
+		public static async Task CreateCase(CaseForm caseForm)
 		{
-			var customer = await _context.Customers.FirstOrDefaultAsync(x => x.Email == email);
+			var customer = await _context.Customers.FirstOrDefaultAsync(x => x.Email == caseForm.CustomerEmail);
 			if(customer != null)
 			{
 				var caseEntity = new CaseEntity
 				{
-					Description = description,
+					CaseNumber = caseForm.Casenumber,
+					Description = caseForm.Description,
 					CaseCreated = DateTime.Now,
 					CaseStatusId = 1,
 					CustomerId = customer.Id,
@@ -29,7 +30,7 @@ namespace DatalagringHans.Services
 				await _context.SaveChangesAsync();
 			}
 		}
-		public async Task<IEnumerable<CaseInformation>> ShowAllCase()
+		public static async Task<IEnumerable<CaseInformation>> ShowAllCase()
 		{
 			var listOfCases = new List<CaseInformation>();
 			foreach (var caseItem in await _context.Cases.Include(x => x.Customer).Include(x => x.CaseStatus).Include(x => x.Comment).ThenInclude(x => x.Employee).ToListAsync())
@@ -41,6 +42,7 @@ namespace DatalagringHans.Services
 					CustomerLastName = caseItem.Customer.LastName,
 					CaseCreated = caseItem.CaseCreated,
 					CaseStatus = caseItem.CaseStatus.Status,
+					CaseNumber= caseItem.CaseNumber,
 					Comments = new List<CommentForm>()
 				};
 				if (caseItem.Comment != null)
@@ -61,7 +63,7 @@ namespace DatalagringHans.Services
 			}
 			return listOfCases;
 		}
-		public async Task<CaseInformation> GetSpecificCase(Guid casenumber)
+		public static async Task<CaseInformation> GetSpecificCase(Guid casenumber)
 		{
 			
 			var _case = await _context.Cases.Include(x => x.Customer).Include(x => x.CaseStatus).Include(x => x.Comment).ThenInclude(x => x.Employee).FirstOrDefaultAsync(x => x.CaseNumber == casenumber);
@@ -74,7 +76,9 @@ namespace DatalagringHans.Services
 					CustomerLastName = _case.Customer.LastName,
 					CaseCreated = _case.CaseCreated,
 					CaseStatus = _case.CaseStatus.Status,
+					CaseNumber = _case.CaseNumber,
 					Comments = new List<CommentForm>()
+					
 				};
 				if(_case.Comment != null)
 				{
@@ -96,28 +100,8 @@ namespace DatalagringHans.Services
 				return null!;
 			}
 		}
-		public async Task CommentCaseEmployee(CommentForm newComment)
-		{
-			var employee = await _context.Employees.FirstOrDefaultAsync(x => x.Id == newComment.Id);
-			var _case = await _context.Cases.FirstOrDefaultAsync(x => x.CaseNumber == newComment.Casenumber);
 
-			if(employee != null && _case != null)
-			{
-				var commentEntity = new CommentEntity
-				{
-					Comment = newComment.Description,
-					CreatedComment = DateTime.Now,
-					CaseId = newComment.Casenumber,
-					EmployeeId= newComment.Id,
-				};
-				_context.Add(commentEntity);
-				await _context.SaveChangesAsync();
-			}
-
-
-		}
-
-		public async Task ChangeCaseStatus(CaseForm caseStatus)
+		public static async Task ChangeCaseStatus(CaseForm caseStatus)
 		{
 			var employee = await _context.Employees.FirstOrDefaultAsync(x => x.Id == caseStatus.EmployeeId);
 			var _case = await _context.Cases.FirstOrDefaultAsync(x => x.CaseNumber == caseStatus.Casenumber);
@@ -128,7 +112,7 @@ namespace DatalagringHans.Services
 				await _context.SaveChangesAsync();
 			}
 		}
-		public async Task<CaseForm> GetSpecificCaseStatus(int _statusId)
+		public static async Task<CaseForm> GetSpecificCaseStatus(int _statusId)
 		{
 			var _status = await _context.CaseStatuses.FirstOrDefaultAsync(x => x.Id == _statusId);
 			if(_status != null)

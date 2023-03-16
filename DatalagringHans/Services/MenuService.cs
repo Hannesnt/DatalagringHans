@@ -10,9 +10,6 @@ namespace DatalagringHans.Services
 {
 	internal class MenuService
 	{
-		private readonly CustomerService _customerService = new CustomerService();
-		private readonly CaseService _caseService = new CaseService();
-		private readonly EmployeeService _employeeService= new EmployeeService();
 		public async Task MainMenu()
 		{
 			Console.Clear();
@@ -51,7 +48,7 @@ namespace DatalagringHans.Services
 		{
 			int FormChecker = 0;
 			var newCustomer = new CustomerForm();
-			List<string> customerForms= new List<string>();
+			List<string> customerForms= new();
 			Console.Clear();
 			Console.WriteLine("###### Skapa Användare ######");
 			Console.WriteLine("Förnamn: ");
@@ -62,7 +59,7 @@ namespace DatalagringHans.Services
 			customerForms.Add(newCustomer.LastName);
 			Console.WriteLine("Email: ");
 			newCustomer.Email = Console.ReadLine() ?? "";
-			var emailCheck = await _customerService.GetSpecificCustomer(newCustomer.Email);
+			var emailCheck = await CustomerService.GetSpecificCustomer(newCustomer.Email);
 			if(emailCheck == null)
 			{
 				customerForms.Add(newCustomer.Email);
@@ -100,7 +97,7 @@ namespace DatalagringHans.Services
 						}
 						if (FormChecker == 7)
 						{
-							await _customerService.CreateCustomer(newCustomer);
+							await CustomerService.CreateCustomer(newCustomer);
 							Console.Clear();
 							Console.WriteLine("Du är nu en registerad användare! \n\n Tryck på valfri knapp för att återgå till huvudmenyn");
 						}
@@ -124,7 +121,7 @@ namespace DatalagringHans.Services
 			Console.WriteLine("###### Sök efter användare ######");
 			Console.WriteLine("Ange Email-adressen");
 			string email = Console.ReadLine() ?? "";
-			var customer = await _customerService.GetSpecificCustomer(email);
+			var customer = await CustomerService.GetSpecificCustomer(email);
 			if (customer != null)
 			{
 				Console.WriteLine($"Hittade användare: \n {customer.FirstName} {customer.LastName} \n {customer.PhoneNumber} \n {customer.Streetname} - {customer.PostalCode} - {customer.City}");
@@ -141,14 +138,16 @@ namespace DatalagringHans.Services
 			Console.WriteLine("###### Skapa felanmälan ######");
 			Console.WriteLine("Ange din Email-adressen");
 			string email = Console.ReadLine() ?? "";
-			var customer = await _customerService.GetSpecificCustomer(email);
+			var customer = await CustomerService.GetSpecificCustomer(email);
 			if (customer != null)
 			{
 				Console.WriteLine("Beskriv din felanmälan");
-				string description = Console.ReadLine() ?? "";
-				await _caseService.CreateCase(description, email);
+				CaseForm newCase = new CaseForm();
+				newCase.Description = Console.ReadLine() ?? "";
+				newCase.CustomerEmail = customer.Email;
+				await CaseService.CreateCase(newCase);
 				Console.Clear();
-				Console.WriteLine($"Din felanmälan är nu skapt! \n\n{customer.FirstName} {customer.LastName} \n{description}\n\n Tryck på valfri knapp för att återgå till huvudmenyn");
+				Console.WriteLine($"Din felanmälan är nu skapt! \n\n{newCase.Casenumber}\n{customer.FirstName} {customer.LastName} \n{newCase.Description}\n\nTryck på valfri knapp för att återgå till huvudmenyn");
 			}
 			else
 			{
@@ -160,7 +159,7 @@ namespace DatalagringHans.Services
 		{
 			Console.Clear();
 			Console.WriteLine("###### Alla felanmälningar ###### \n");
-			var Cases = await _caseService.ShowAllCase();
+			var Cases = await CaseService.ShowAllCase();
 			if(Cases == null)
 			{
 				Console.WriteLine("Det finns inga anmälningar inne.");
@@ -171,6 +170,7 @@ namespace DatalagringHans.Services
 				{
 					Console.WriteLine($"#### Felanmälan skapad: {items.CaseCreated} ####");
 					Console.WriteLine($"Kund: {items.CustomerFirstName} {items.CustomerLastName}");
+					Console.WriteLine($"Casenummer: {items.CaseNumber}");
 					Console.WriteLine($"Beskrivning: {items.Description}");
 					Console.WriteLine($"Status: {items.CaseStatus}");
 					Console.WriteLine("Kommentarer: \n");
@@ -194,7 +194,7 @@ namespace DatalagringHans.Services
 			Console.WriteLine("Ange casenumret för din felanmälan:");
 			if(Guid.TryParse(Console.ReadLine(), out Guid id))
 			{
-				var Cases = await _caseService.GetSpecificCase(id);
+				var Cases = await CaseService.GetSpecificCase(id);
 				if (Cases == null)
 				{
 					Console.Clear();
@@ -205,6 +205,7 @@ namespace DatalagringHans.Services
 					{
 						Console.Clear();
 						Console.WriteLine($"Kund: {Cases.CustomerFirstName} {Cases.CustomerLastName}");
+						Console.WriteLine($"Casenummer: {Cases.CaseNumber}");
 						Console.WriteLine($"Felanmälan skapad: {Cases.CaseCreated}");
 						Console.WriteLine($"Beskrivning: {Cases.Description}");
 						Console.WriteLine($"Status: {Cases.CaseStatus}");
@@ -234,19 +235,19 @@ namespace DatalagringHans.Services
 			if(int.TryParse(Console.ReadLine(), out int Id))
 			{
 				comment.Id = Id;
-				var employee = await _employeeService.GetSpecificEmployee(comment.Id);
+				var employee = await EmployeeService.GetSpecificEmployee(comment.Id);
 				if(employee != null)
 				{
 					Console.WriteLine("Ange det ordernummer du vill kommentera");
 					if(Guid.TryParse(Console.ReadLine(), out Guid Orderid))
 					{
-						var _case = await _caseService.GetSpecificCase(Orderid);
+						var _case = await CaseService.GetSpecificCase(Orderid);
 						if(_case!= null)
 						{
 							comment.Casenumber = Orderid;
 							Console.WriteLine("Skriv din kommentar:");
 							comment.Description = Console.ReadLine() ?? "";
-							await _caseService.CommentCaseEmployee(comment);
+							await CommentService.CommentCaseEmployee(comment);
 							Console.Clear();
 							Console.WriteLine($"Din kommentar är nu gjord! \n\n{employee.FirstName} {employee.LastName} \n{comment.Description}\n\nTryck på valfri knapp för att återgå till huvudmenyn");
 						}
@@ -276,26 +277,26 @@ namespace DatalagringHans.Services
 			if (int.TryParse(Console.ReadLine(), out int Id))
 			{
 				_case.EmployeeId = Id;
-				var employee = await _employeeService.GetSpecificEmployee(Id);
+				var employee = await EmployeeService.GetSpecificEmployee(Id);
 				if(employee != null)
 				{
 					Console.WriteLine("Ange det ordernummer du vill ändra status på");
 					if (Guid.TryParse(Console.ReadLine(), out Guid Orderid))
 					{
 						_case.Casenumber = Orderid;
-						var _caseChecker = await _caseService.GetSpecificCase(Orderid);
+						var _caseChecker = await CaseService.GetSpecificCase(Orderid);
 						if(_caseChecker != null)
 						{
 							Console.WriteLine($"Vilken status vill du att ärendet skall ha? (1-3). Nuvarande Status: {_caseChecker.CaseStatus}\n 1. Ej påbörjad \n 2. Pågående \n 3. Avslutad");
 							if (int.TryParse(Console.ReadLine(), out int StatusId))
 							{
 								_case.CaseStatusId = StatusId;
-								var _statusChecker = await _caseService.GetSpecificCaseStatus(StatusId);
+								var _statusChecker = await CaseService.GetSpecificCaseStatus(StatusId);
 								if(_statusChecker != null)
 								{
-									await _caseService.ChangeCaseStatus(_case);
+									await CaseService.ChangeCaseStatus(_case);
 									Console.Clear();
-									Console.WriteLine($"Din Statusändring är nu gjort. Från {_caseChecker.CaseStatus} till {_statusChecker.CaseStatus}\n\n Tryck på valfri knapp för att återgå till huvudmenyn");
+									Console.WriteLine($"Din Statusändring är nu gjort. Från {_caseChecker.CaseStatus.Trim()} till {_statusChecker.CaseStatus}\n\nTryck på valfri knapp för att återgå till huvudmenyn");
 								}
 								else
 								{

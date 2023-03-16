@@ -16,5 +16,6 @@ namespace DatalagringHans.Models.Forms
 		public string Streetname { get; set; } = null!;
 		public string PostalCode { get; set; } = null!;
 		public string City { get; set; } = null!;
+		public Guid CaseNumber { get; set; }
 	}
 }
