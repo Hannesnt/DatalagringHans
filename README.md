@@ -7,7 +7,7 @@ EmployeeEntity:
 En EmployeeEntity kan ha flera CommentEntity.
 En CommentEntity tillhör en EmployeeEntity.
 
-CustomerEntity:
+###CustomerEntity:
 
 En CustomerEntity kan ha flera CaseEntity.
 En CustomerEntity har en AddressEntity.
